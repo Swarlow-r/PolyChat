@@ -390,6 +390,77 @@
     }
   }
 
+  function extractChatglmSessionTitle() {
+    try {
+      var cid = extractConversationId(window.location.href, 'chatglm');
+      var items = document.querySelectorAll('.history-item');
+      if (!items || items.length === 0) return null;
+
+      var generic = { 智谱清言: true, GLM: true };
+
+      function readItemTitle(item) {
+        var titleEl = item.querySelector(':scope > .title') || item.querySelector('.title');
+        if (!titleEl) return '';
+        return cleanAnswerText(String(titleEl.innerText || titleEl.textContent || '').trim());
+      }
+
+      function isGenericTitle(t) {
+        return !t || t.length < 1 || generic[t] === true;
+      }
+
+      function itemLooksSelected(item) {
+        var cls = item.className;
+        var s = typeof cls === 'string' ? cls : cls && cls.baseVal != null ? String(cls.baseVal) : String(cls || '');
+        if (/\b(selected|active|current|is-active)\b/i.test(s)) return true;
+        if (item.querySelector('[class*="selected"], [class*="active"]')) return true;
+        return false;
+      }
+
+      function itemMatchesCid(item) {
+        if (!cid) return false;
+        if (item.getAttribute && item.getAttribute('data-cid') === cid) return true;
+        if (item.getAttribute && item.getAttribute('data-id') === cid) return true;
+        if (item.getAttribute && item.getAttribute('data-conversation-id') === cid) return true;
+        try {
+          var ds = item.dataset;
+          if (ds && (ds.cid === cid || ds.id === cid || ds.conversationId === cid)) return true;
+        } catch (e) {}
+        var link = item.querySelector('a[href*="cid="]');
+        if (link && link.href) {
+          try {
+            var u = new URL(link.href, window.location.origin);
+            if (u.searchParams.get('cid') === cid) return true;
+          } catch (e2) {}
+        }
+        return false;
+      }
+
+      var i;
+      for (i = 0; i < items.length; i++) {
+        var it = items[i];
+        if (!itemLooksSelected(it)) continue;
+        var tSel = readItemTitle(it);
+        if (!isGenericTitle(tSel)) {
+          console.log('[PolyChat] ChatGLM 从选中历史项提取标题:', tSel);
+          return tSel;
+        }
+      }
+      for (i = 0; i < items.length; i++) {
+        var it2 = items[i];
+        if (!itemMatchesCid(it2)) continue;
+        var tCid = readItemTitle(it2);
+        if (!isGenericTitle(tCid)) {
+          console.log('[PolyChat] ChatGLM 从 cid 匹配历史项提取标题:', tCid);
+          return tCid;
+        }
+      }
+      return null;
+    } catch (err) {
+      console.warn('[PolyChat] ChatGLM 会话标题提取失败:', err);
+      return null;
+    }
+  }
+
   function normalizeKimiKatexInClone(clone) {
     var list = Array.prototype.slice.call(clone.querySelectorAll('.katex'));
     list.forEach(function (k) {
@@ -773,7 +844,7 @@
             type: 'REGISTER_TAB',
             siteId: siteId,
             url: window.location.href,
-            title: document.title,
+            title: siteId === 'chatglm' ? (extractChatglmSessionTitle() || document.title) : document.title,
             conversationId: cid
           }, function (response) {
             if (chrome.runtime.lastError || !response || !response.ok || !response.hasConversationId || !response.id) return;
@@ -1695,7 +1766,7 @@
           type: 'REGISTER_TAB',
           siteId: siteId,
           url: newUrl,
-          title: document.title,
+          title: siteId === 'chatglm' ? (extractChatglmSessionTitle() || document.title) : document.title,
           conversationId: newConvId
         }, (response) => {
           if (chrome.runtime.lastError || !response) return;
@@ -2201,7 +2272,13 @@
             sessionTitle = extractedTitle;
           }
         }
-        
+        if (siteId === 'chatglm') {
+          var glmTitle = extractChatglmSessionTitle();
+          if (glmTitle) {
+            sessionTitle = glmTitle;
+          }
+        }
+
         chrome.runtime.sendMessage({
           type: 'CAPTURE_CONVERSATIONS',
           conversationId: this._conversationId,
@@ -3107,7 +3184,7 @@
         type: 'REGISTER_TAB',
         siteId: siteId,
         url: window.location.href,
-        title: document.title,
+        title: siteId === 'chatglm' ? (extractChatglmSessionTitle() || document.title) : document.title,
         conversationId: conversationId
       }, function (response) {
         if (chrome.runtime.lastError || !response) {

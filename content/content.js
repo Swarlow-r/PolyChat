@@ -125,6 +125,54 @@
     return stripChatglmAnswerNoise(raw);
   }
 
+  /** ChatGLM：同一 id 的提问行在 DOM 中可能重复，按 row-question-* 去重 */
+  function dedupeChatglmUserNodes(userNodeList) {
+    var arr = Array.prototype.slice.call(userNodeList || []);
+    var seenIds = Object.create(null);
+    var out = [];
+    for (var i = 0; i < arr.length; i++) {
+      var el = arr[i];
+      var id = el && el.id ? String(el.id) : '';
+      if (/^row-question-/i.test(id)) {
+        if (seenIds[id]) continue;
+        seenIds[id] = true;
+      }
+      out.push(el);
+    }
+    return out;
+  }
+
+  function mergeConsecutiveChatglmAssistants(messages) {
+    var out = [];
+    for (var i = 0; i < messages.length; i++) {
+      var m = messages[i];
+      if (m.role === 'assistant' && out.length && out[out.length - 1].role === 'assistant') {
+        var prev = out[out.length - 1];
+        prev.content = (prev.content || '') + '\n\n' + (m.content || '');
+      } else {
+        out.push(m);
+      }
+    }
+    return out;
+  }
+
+  /** 思考块与正文相邻且同为 assistant 时的兜底：去掉连续重复的用户气泡 */
+  function collapseConsecutiveDuplicateChatglmUsers(messages) {
+    var out = [];
+    for (var i = 0; i < messages.length; i++) {
+      var m = messages[i];
+      if (m.role === 'user' && out.length && out[out.length - 1].role === 'user' && out[out.length - 1].content === m.content) {
+        continue;
+      }
+      out.push(m);
+    }
+    return out;
+  }
+
+  function normalizeChatglmCapturedMessages(messages) {
+    return collapseConsecutiveDuplicateChatglmUsers(mergeConsecutiveChatglmAssistants(messages));
+  }
+
   // ==================== DOM解析工具（保留原有功能） ====================
 
   function isDoubaoLikelyUserBubble(el) {
@@ -1898,6 +1946,7 @@
       if (!config) return;
 
       var userEls = this._querySelectorAll(config, 'user');
+      if (siteId === 'chatglm') userEls = dedupeChatglmUserNodes(userEls);
       var assistantEls = this._querySelectorAll(config, 'assistant');
 
       var allMessages = [];
@@ -1923,21 +1972,6 @@
         return 0;
       });
 
-      for (var i = 0; i < allMessages.length; i++) {
-        var msg = allMessages[i];
-        this._addFingerprint(this._fingerprint(msg.role, msg.content));
-      }
-
-      this._knownAssistantCount = assistantEls.length;
-
-      this._lastAssistantText = '';
-      for (var j = allMessages.length - 1; j >= 0; j--) {
-        if (allMessages[j].role === 'assistant') {
-          this._lastAssistantText = allMessages[j].content;
-          break;
-        }
-      }
-
       if (userEls.length === 0 && assistantEls.length > 0) {
         var foundByProbe = this._probeUserMessages(config, assistantEls);
         if (foundByProbe.length > 0) {
@@ -1950,6 +1984,25 @@
             if (pos & Node.DOCUMENT_POSITION_PRECEDING) return 1;
             return 0;
           });
+        }
+      }
+
+      if (siteId === 'chatglm') {
+        allMessages = normalizeChatglmCapturedMessages(allMessages);
+      }
+
+      for (var fi = 0; fi < allMessages.length; fi++) {
+        var msg = allMessages[fi];
+        this._addFingerprint(this._fingerprint(msg.role, msg.content));
+      }
+
+      this._knownAssistantCount = assistantEls.length;
+
+      this._lastAssistantText = '';
+      for (var j = allMessages.length - 1; j >= 0; j--) {
+        if (allMessages[j].role === 'assistant') {
+          this._lastAssistantText = allMessages[j].content;
+          break;
         }
       }
 
@@ -2026,6 +2079,7 @@
       if (!config || !this._isObserving) return;
 
       var userEls = this._querySelectorAll(config, 'user');
+      if (siteId === 'chatglm') userEls = dedupeChatglmUserNodes(userEls);
       var assistantEls = this._querySelectorAll(config, 'assistant');
       var allMessages = [];
 
@@ -2079,6 +2133,10 @@
           allMessages.splice(ins, 0, { role: 'user', content: pendingRaw, el: anchorEl });
         }
         this._pendingComposerUserText = null;
+      }
+
+      if (siteId === 'chatglm') {
+        allMessages = normalizeChatglmCapturedMessages(allMessages);
       }
 
       if (allMessages.length === 0) return;

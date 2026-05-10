@@ -17,7 +17,7 @@ class ConversationStorage {
       gemini: { name: 'Gemini', color: '#4285f4' },
       grok: { name: 'Grok', color: '#1da1f2' },
       yiyan: { name: '文心一言', color: '#2932e1' },
-      chatglm: { name: '智谱清言', color: '#1a56c4' }
+      chatglm: { name: 'GLM', color: '#1a56c4' }
     };
 
     // ── 内存缓存（P0优化：避免每次操作全量读写chrome.storage） ──
@@ -492,7 +492,7 @@ class ConversationStorage {
     await this._ensureCache();
     const { conversations, meta } = this._cache;
 
-    const result = { doubao: [], yuanbao: [], kimi: [], deepseek: [], gemini: [], grok: [], yiyan: [] };
+    const result = { doubao: [], yuanbao: [], kimi: [], deepseek: [], gemini: [], grok: [], yiyan: [], chatglm: [] };
 
     for (const id of Object.keys(conversations)) {
       const conv = conversations[id];
@@ -529,7 +529,8 @@ class ConversationStorage {
       ...bySite.deepseek,
       ...bySite.gemini,
       ...bySite.grok,
-      ...bySite.yiyan
+      ...bySite.yiyan,
+      ...bySite.chatglm
     ];
     return all.sort((a, b) => b.updatedAt - a.updatedAt);
   }

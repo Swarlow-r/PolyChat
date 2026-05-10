@@ -2341,7 +2341,7 @@ Please report this to https://github.com/markedjs/marked.`, e) {
     gemini: "Gemini",
     grok: "Grok",
     yiyan: "\u6587\u5FC3\u4E00\u8A00",
-    chatglm: "\u667A\u8C31\u6E05\u8A00"
+    chatglm: "GLM"
   };
   var ALL_SITE_IDS = ["doubao", "yuanbao", "kimi", "deepseek", "gemini", "grok", "yiyan", "chatglm"];
   var SITE_ICON_FILES = {
@@ -2352,7 +2352,7 @@ Please report this to https://github.com/markedjs/marked.`, e) {
     gemini: "gemini.png",
     grok: "grok.png",
     yiyan: "wenxinyiyan.png",
-    chatglm: "chatglm.png"
+    chatglm: "GLM.png"
   };
   var customSiteOrder = null;
   var customPlatformOrder = null;

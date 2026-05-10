@@ -991,6 +991,19 @@ mark.search-hit {
   background: linear-gradient(135deg, var(--accent), var(--kimi));
   color: #fff;
 }
+.message-item.assistant .message-role.message-role-ai {
+  padding: 0;
+  overflow: hidden;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  color: inherit;
+}
+.message-item.assistant .message-role-ai img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
 
 .message-content { flex: 1; min-width: 0; }
 

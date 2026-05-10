@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "PolyChat",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "同时对多个AI进行提问；把所有信息都收拢到一个页面，并存储在本地；支持像微信聊天记录一样选择会话内容进行总结。支持在插件页面比对不同AI的回答内容",
   "permissions": [
     "activeTab",

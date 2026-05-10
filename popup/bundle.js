@@ -2343,6 +2343,15 @@ Please report this to https://github.com/markedjs/marked.`, e) {
     yiyan: "\u6587\u5FC3\u4E00\u8A00"
   };
   var ALL_SITE_IDS = ["doubao", "yuanbao", "kimi", "deepseek", "gemini", "grok", "yiyan"];
+  var SITE_ICON_FILES = {
+    doubao: "doubao.png",
+    yuanbao: "yuanbao.png",
+    kimi: "kimi.png",
+    deepseek: "deepseek.png",
+    gemini: "gemini.png",
+    grok: "grok.png",
+    yiyan: "wenxinyiyan.png"
+  };
   var customSiteOrder = null;
   var customPlatformOrder = null;
   function emptyConversationsBySite() {
@@ -2463,6 +2472,15 @@ Please report this to https://github.com/markedjs/marked.`, e) {
   function escapeHtml(str) {
     if (str == null) return "";
     return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
+  function getAssistantAvatarRoleHtml(siteId) {
+    const file = SITE_ICON_FILES[siteId];
+    const alt = SITE_NAMES[siteId] || siteId || "AI";
+    if (file && typeof chrome !== "undefined" && chrome.runtime && typeof chrome.runtime.getURL === "function") {
+      const src = chrome.runtime.getURL("icons/" + file);
+      return `<div class="message-role message-role-ai"><img src="${escapeHtml(src)}" alt="${escapeHtml(alt)}" /></div>`;
+    }
+    return `<div class="message-role">\u{1F916}</div>`;
   }
   var SEARCH_HIT_DELIMS = /* @__PURE__ */ new Set([
     ",",
@@ -3026,7 +3044,7 @@ Please report this to https://github.com/markedjs/marked.`, e) {
     const messages = getOrderedMessagesForDisplay(conversation);
     containerEl.innerHTML = messages.map((msg) => {
       const isUser = msg.role === "user";
-      const roleLabel = isUser ? "\u{1F464}" : "\u{1F916}";
+      const roleCol = isUser ? `<div class="message-role">\u{1F464}</div>` : getAssistantAvatarRoleHtml(conversation.siteId);
       const timeStr = formatTime(msg.timestamp);
       let contentHtml;
       if (isUser) {
@@ -3042,7 +3060,7 @@ Please report this to https://github.com/markedjs/marked.`, e) {
       return `
         <div class="message-item ${msg.role} ${selectable} ${selected}" data-msg-id="${escapeHtml(msg.id)}">
           ${checkboxHtml}
-          <div class="message-role">${roleLabel}</div>
+          ${roleCol}
           <div class="message-content">
             <div class="message-time">${timeStr}${!msg.isComplete && msg.role === "assistant" ? " \xB7 \u751F\u6210\u4E2D..." : ""}</div>
             <div class="message-body-wrapper">

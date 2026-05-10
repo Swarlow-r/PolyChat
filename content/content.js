@@ -24,6 +24,7 @@
     if (h === 'gemini.google.com') return 'gemini';
     if (h === 'grok.com') return 'grok';
     if (h === 'yiyan.baidu.com') return 'yiyan';
+    if (h === 'chatglm.cn') return 'chatglm';
     return null;
   }
 
@@ -81,8 +82,12 @@
         const matchYiyan = path.match(/^\/chat\/([^\/?#]+)\/?$/);
         return matchYiyan ? matchYiyan[1] : null;
       }
-        default:
-          return null;
+      case 'chatglm': {
+        const cidGl = u.searchParams.get('cid');
+        return cidGl && String(cidGl).trim() ? String(cidGl).trim() : null;
+      }
+      default:
+        return null;
       }
     } catch (_) {
       return null;
@@ -93,6 +98,31 @@
     // 文心一言：仅当 URL 为 /chat/{id} 时才有会话 ID；https://yiyan.baidu.com/ 新会话不注册
     var cid = extractConversationId(window.location.href, siteId);
     return cid || null;
+  }
+
+  /** ChatGLM 回答文末噪声（与 opencli ask.js 思路一致） */
+  function stripChatglmAnswerNoise(t) {
+    if (t == null || t === '') return '';
+    var s = cleanAnswerText(String(t).trim());
+    var idxThink = s.indexOf('思考结束');
+    if (idxThink !== -1) s = s.substring(idxThink + 4);
+    s = cleanAnswerText(s.trim());
+    s = s
+      .replace(/内容由AI生成.*甄别/g, '')
+      .replace(/内容由 AI 生成.*甄别/g, '')
+      .replace(/以上内容为 AI 生成.*修改本标记/g, '')
+      .trim();
+    return s;
+  }
+
+  function readChatglmLastMarkdownAnswer() {
+    var nodes = document.querySelectorAll('.answer-content-wrap .markdown-body');
+    if (!nodes.length) return '';
+    var el = nodes[nodes.length - 1];
+    var clone = el.cloneNode(true);
+    clone.querySelectorAll('.copy-btn, .copy-btn-icon, [class*="copy-btn"], button').forEach(function (n) { n.remove(); });
+    var raw = cleanAnswerText((clone.innerText || clone.textContent || '').trim());
+    return stripChatglmAnswerNoise(raw);
   }
 
   // ==================== DOM解析工具（保留原有功能） ====================
@@ -1156,6 +1186,14 @@
           '[class*="chat-list"]',              // 通用聊天列表
           '.overflow-auto',                    // 自动滚动容器
         ],
+        chatglm: [
+          '.answer-content-wrap',
+          '[class*="answer-content"]',
+          'main',
+          '[class*="message-list"]',
+          '[class*="chat-list"]',
+          '.overflow-y-auto',
+        ],
       },
       // 统一发送按钮选择器
       sendButtonSelectors: {
@@ -1214,6 +1252,13 @@
           'button[type="submit"]',
           '.inputToolbarRight button',
           'div[class*="btnContainer"] button'
+        ],
+        chatglm: [
+          '#search-input-box button[type="submit"]',
+          '#search-input-box button',
+          'button[aria-label*="发送"]',
+          '[class*="input-box"] button[type="submit"]',
+          'button[class*="send"]'
         ]
       },
       doubao: {
@@ -1419,6 +1464,33 @@
           var clone = textEl.cloneNode(true);
           clone.querySelectorAll('button, [class*="toolbar"], [class*="action"], [class*="copy"], [class*="dialogCardBottom"]').forEach(function (n) { n.remove(); });
           var raw = cleanAnswerText((clone.innerText || clone.textContent || '').trim());
+          if (raw && raw.length > 2) return raw;
+          return null;
+        },
+      },
+      chatglm: {
+        userSelectors: [
+          '[id^="row-question-"]',
+          '.question-text-style',
+        ],
+        userSelector: '[id^="row-question-"]',
+        getUserText: function (el) {
+          var textEl = el.querySelector('.question-txt span, .question-txt') || el;
+          var t = cleanAnswerText((textEl.innerText || textEl.textContent || '').trim());
+          if (!t || t.length < 1) return null;
+          return t;
+        },
+        assistantSelectors: [
+          '.answer-content-wrap',
+          '[class*="answer-content-wrap"]',
+        ],
+        assistantSelector: '.answer-content-wrap',
+        getAssistantText: function (el) {
+          var md = el.querySelector('.markdown-body, [class*="markdown-body"]') || el;
+          var clone = md.cloneNode(true);
+          clone.querySelectorAll('.copy-btn, .copy-btn-icon, [class*="copy-btn"], button, [class*="toolbar"]').forEach(function (n) { n.remove(); });
+          var raw = cleanAnswerText((clone.innerText || clone.textContent || '').trim());
+          raw = stripChatglmAnswerNoise(raw);
           if (raw && raw.length > 2) return raw;
           return null;
         },
@@ -2912,7 +2984,55 @@
     },
   };
 
-  var adapters = { doubao: doubaoAdapter, yuanbao: yuanbaoAdapter, kimi: kimiAdapter, deepseek: deepseekAdapter, gemini: geminiAdapter, grok: grokAdapter, yiyan: yiyanAdapter };
+  var chatglmAdapter = {
+    sendQuestion: function (prompt) {
+      var inputSelector = '#search-input-box textarea';
+      var answerSelector = '.answer-content-wrap .markdown-body';
+      var inputEl;
+      return waitFor(inputSelector, document, 20000).then(function (input) {
+        inputEl = input;
+        setInputValue(input, prompt);
+        return wait(350);
+      }).then(function () {
+        var countBefore = document.querySelectorAll(answerSelector).length;
+        var sendBtn = document.querySelector('#search-input-box button[type="submit"], #search-input-box button[aria-label*="发送"], button[aria-label*="发送"]');
+        if (sendBtn) sendBtn.click();
+        else if (inputEl) {
+          inputEl.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true, cancelable: true }));
+        }
+        return captureNewAnswer(answerSelector, 90000, { initialCount: countBefore, readText: function () { return readChatglmLastMarkdownAnswer(); } });
+      }).then(function (answer) { return { status: 'ok', answer: answer, error: null }; }).catch(function (err) { return { status: 'error', error: err.message || String(err), answer: null }; });
+    },
+    sendQuestionStream: function (prompt, requestId, tabId) {
+      var inputSelector = '#search-input-box textarea';
+      var answerSelector = '.answer-content-wrap .markdown-body';
+      var inputEl;
+      var initialCount = 0;
+      return waitFor(inputSelector, document, 20000).then(function (input) {
+        inputEl = input;
+        setInputValue(input, prompt);
+        return wait(350);
+      }).then(function () {
+        initialCount = document.querySelectorAll(answerSelector).length;
+        var sendBtn = document.querySelector('#search-input-box button[type="submit"], #search-input-box button[aria-label*="发送"], button[aria-label*="发送"]');
+        if (sendBtn) sendBtn.click();
+        else if (inputEl) {
+          inputEl.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true, cancelable: true }));
+        }
+        return captureNewAnswer(answerSelector, 90000, { initialCount: initialCount, readText: function () { return readChatglmLastMarkdownAnswer(); } });
+      }).then(function (answer) {
+        return streamResultFromCaptureAnswer(answer);
+      }).then(function (res) {
+        sendRuntimeMessageSafe({ type: 'STREAM_DONE', requestId: requestId, tabId: tabId, siteId: siteId, status: res.status === 'success' ? 'success' : res.status === 'timeout' ? 'timeout' : 'error', answer: res.answer != null ? res.answer : null, error: res.error != null ? res.error : null });
+        return res;
+      }).catch(function (err) {
+        sendRuntimeMessageSafe({ type: 'STREAM_DONE', requestId: requestId, tabId: tabId, siteId: siteId, status: 'error', answer: null, error: err && err.message ? err.message : String(err) });
+        return { status: 'error', answer: null, error: err && err.message ? err.message : String(err) };
+      });
+    },
+  };
+
+  var adapters = { doubao: doubaoAdapter, yuanbao: yuanbaoAdapter, kimi: kimiAdapter, deepseek: deepseekAdapter, gemini: geminiAdapter, grok: grokAdapter, yiyan: yiyanAdapter, chatglm: chatglmAdapter };
   var siteId = getSiteId();
   if (!siteId) return;
 

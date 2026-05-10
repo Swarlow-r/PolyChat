@@ -34,6 +34,7 @@ const SUPPORTED_ORIGINS = [
   'https://gemini.google.com',
   'https://grok.com',
   'https://yiyan.baidu.com',
+  'https://chatglm.cn',
 ];
 
 const SUPPORTED_URL_PATTERNS = [
@@ -44,10 +45,11 @@ const SUPPORTED_URL_PATTERNS = [
   'https://gemini.google.com/*',
   'https://grok.com/*',
   'https://yiyan.baidu.com/*',
+  'https://chatglm.cn/*',
 ];
 
-/** 发送面板固定六站（与 Popup 一致） */
-const SEND_PANEL_SITE_IDS = ['doubao', 'yuanbao', 'kimi', 'deepseek', 'gemini', 'grok', 'yiyan'];
+/** 发送面板站点列表（与 Popup 一致） */
+const SEND_PANEL_SITE_IDS = ['doubao', 'yuanbao', 'kimi', 'deepseek', 'gemini', 'grok', 'yiyan', 'chatglm'];
 
 const OPEN_PAGE_URLS_STORAGE_KEY = 'open_page_urls';
 
@@ -59,6 +61,7 @@ const DEFAULT_OPEN_PAGE_URLS = {
   gemini: 'https://gemini.google.com/app',
   grok: 'https://grok.com/',
   yiyan: 'https://yiyan.baidu.com/',
+  chatglm: 'https://chatglm.cn/main/',
 };
 
 // ── URL和站点工具 ──
@@ -73,6 +76,7 @@ function getSiteId(url) {
     if (u.hostname === 'gemini.google.com') return 'gemini';
     if (u.hostname === 'grok.com') return 'grok';
     if (u.hostname === 'yiyan.baidu.com') return 'yiyan';
+    if (u.hostname === 'chatglm.cn') return 'chatglm';
   } catch (_) {}
   return null;
 }
@@ -122,6 +126,10 @@ function extractConversationId(url, siteId) {
         // 文心一言 URL格式: /chat/{conversationId} 或 /（新对话）
         const matchYiyan = path.match(/^\/chat\/([^\/?#]+)\/?$/);
         return matchYiyan ? matchYiyan[1] : null;
+      case 'chatglm': {
+        const cid = u.searchParams.get('cid');
+        return cid && String(cid).trim() ? String(cid).trim() : null;
+      }
       default:
         return null;
     }
@@ -1012,6 +1020,14 @@ class ConversationPollingManager {
         priority: 'normal'
       },
       yiyan: {
+        enabled: true,
+        baseInterval: 10000,
+        activeInterval: 5000,
+        idleInterval: 15000,
+        backgroundInterval: 30000,
+        priority: 'high'
+      },
+      chatglm: {
         enabled: true,
         baseInterval: 10000,
         activeInterval: 5000,

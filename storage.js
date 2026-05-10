@@ -16,7 +16,8 @@ class ConversationStorage {
       deepseek: { name: 'DeepSeek', color: '#4a6fa5' },
       gemini: { name: 'Gemini', color: '#4285f4' },
       grok: { name: 'Grok', color: '#1da1f2' },
-      yiyan: { name: '文心一言', color: '#2932e1' }
+      yiyan: { name: '文心一言', color: '#2932e1' },
+      chatglm: { name: '智谱清言', color: '#1a56c4' }
     };
 
     // ── 内存缓存（P0优化：避免每次操作全量读写chrome.storage） ──
@@ -157,6 +158,10 @@ class ConversationStorage {
           const matchYiyan = path.match(/^\/chat\/([^\/?#]+)\/?$/);
           return matchYiyan ? matchYiyan[1] : null;
         }
+        case 'chatglm': {
+          const cid = urlObj.searchParams.get('cid');
+          return cid && String(cid).trim() ? String(cid).trim() : null;
+        }
 
         default:
           return null;
@@ -183,6 +188,7 @@ class ConversationStorage {
       if (hostname.includes('chat.deepseek.com')) return 'deepseek';
       if (hostname === 'gemini.google.com') return 'gemini';
       if (hostname.includes('yiyan.baidu.com')) return 'yiyan';
+      if (hostname === 'chatglm.cn') return 'chatglm';
 
       return null;
     } catch (e) {

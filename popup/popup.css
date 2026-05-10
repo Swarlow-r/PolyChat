@@ -61,6 +61,8 @@
   --grok-soft: rgba(26, 26, 26, 0.08);
   --yiyan: #1E3A8A;
   --yiyan-soft: rgba(30, 58, 138, 0.1);
+  --chatglm: #1a56c4;
+  --chatglm-soft: rgba(26, 86, 196, 0.1);
 
   /* ── Layout ── */
   --sidebar-w: 245px;
@@ -299,6 +301,7 @@ html, body {
 .site-group[data-site-id="gemini"] .site-group-header { background: var(--bg); border-bottom-color: var(--gemini); }
 .site-group[data-site-id="grok"] .site-group-header { background: var(--bg); border-bottom-color: var(--grok); }
 .site-group[data-site-id="yiyan"] .site-group-header { background: var(--bg); border-bottom-color: var(--yiyan); }
+.site-group[data-site-id="chatglm"] .site-group-header { background: var(--bg); border-bottom-color: var(--chatglm); }
 
 .site-group-toggle {
   font-size: 9px;
@@ -321,6 +324,7 @@ html, body {
 .site-group-icon.gemini { background: var(--gemini); box-shadow: 0 0 0 3px var(--gemini-soft); }
 .site-group-icon.grok { background: var(--grok); box-shadow: 0 0 0 3px var(--grok-soft); }
 .site-group-icon.yiyan { background: var(--yiyan); box-shadow: 0 0 0 3px var(--yiyan-soft); }
+.site-group-icon.chatglm { background: var(--chatglm); box-shadow: 0 0 0 3px var(--chatglm-soft); }
 
 .site-group-name {
   flex: 1;
@@ -616,6 +620,7 @@ html, body {
 .compare-picker-item-site.gemini { color: var(--gemini); }
 .compare-picker-item-site.grok { color: var(--grok); }
 .compare-picker-item-site.yiyan { color: var(--yiyan); }
+.compare-picker-item-site.chatglm { color: var(--chatglm); }
 
 .session-item.is-session-manage .session-name-text {
   text-decoration: underline;
@@ -797,6 +802,9 @@ mark.search-hit {
 .session-site-badge.kimi { background: var(--kimi); }
 .session-site-badge.deepseek { background: var(--deepseek); }
 .session-site-badge.gemini { background: var(--gemini); }
+.session-site-badge.grok { background: var(--grok); }
+.session-site-badge.yiyan { background: var(--yiyan); }
+.session-site-badge.chatglm { background: var(--chatglm); }
 
 .chat-header-actions {
   display: flex;
@@ -1440,6 +1448,7 @@ mark.search-hit {
 .selected-target-tag[data-site-id="gemini"] { color: var(--gemini); }
 .selected-target-tag[data-site-id="grok"] { color: var(--grok); }
 .selected-target-tag[data-site-id="yiyan"] { color: var(--yiyan); }
+.selected-target-tag[data-site-id="chatglm"] { color: var(--chatglm); }
 
 .selected-target-tag:hover {
   background: var(--bg-hover);
@@ -1508,6 +1517,7 @@ mark.search-hit {
 .tab-site.gemini { color: var(--gemini); }
 .tab-site.grok { color: var(--grok); }
 .tab-site.yiyan { color: var(--yiyan); }
+.tab-site.chatglm { color: var(--chatglm); }
 
 /* ═══════════ Markdown Styles ═══════════ */
 .message-body.markdown-body p { margin: 0 0 0.5em; }

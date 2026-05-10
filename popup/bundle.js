@@ -2340,9 +2340,10 @@ Please report this to https://github.com/markedjs/marked.`, e) {
     deepseek: "DeepSeek",
     gemini: "Gemini",
     grok: "Grok",
-    yiyan: "\u6587\u5FC3\u4E00\u8A00"
+    yiyan: "\u6587\u5FC3\u4E00\u8A00",
+    chatglm: "\u667A\u8C31\u6E05\u8A00"
   };
-  var ALL_SITE_IDS = ["doubao", "yuanbao", "kimi", "deepseek", "gemini", "grok", "yiyan"];
+  var ALL_SITE_IDS = ["doubao", "yuanbao", "kimi", "deepseek", "gemini", "grok", "yiyan", "chatglm"];
   var SITE_ICON_FILES = {
     doubao: "doubao.png",
     yuanbao: "yuanbao.png",
@@ -2350,12 +2351,13 @@ Please report this to https://github.com/markedjs/marked.`, e) {
     deepseek: "deepseek.png",
     gemini: "gemini.png",
     grok: "grok.png",
-    yiyan: "wenxinyiyan.png"
+    yiyan: "wenxinyiyan.png",
+    chatglm: "chatglm.png"
   };
   var customSiteOrder = null;
   var customPlatformOrder = null;
   function emptyConversationsBySite() {
-    return { doubao: [], yuanbao: [], kimi: [], deepseek: [], gemini: [], grok: [], yiyan: [] };
+    return { doubao: [], yuanbao: [], kimi: [], deepseek: [], gemini: [], grok: [], yiyan: [], chatglm: [] };
   }
   var sessionListEl = document.getElementById("session-list");
   var chatColumnsEl = document.getElementById("chat-columns");

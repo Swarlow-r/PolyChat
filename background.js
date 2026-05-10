@@ -474,6 +474,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+  // 会话相关 chrome.storage.local 占用字节（与 ConversationStorage 键一致）
+  if (type === 'GET_SESSION_STORAGE_BYTES') {
+    const SESSION_STORAGE_KEYS = ['chat_conversations', 'chat_conversations_meta'];
+    chrome.storage.local
+      .getBytesInUse(SESSION_STORAGE_KEYS)
+      .then((bytes) => sendResponse(bytes))
+      .catch((e) => sendResponse({ error: e?.message || String(e) }));
+    return true;
+  }
+
   // 导出数据
   if (type === 'EXPORT_DATA') {
     sm.exportAll().then(sendResponse);

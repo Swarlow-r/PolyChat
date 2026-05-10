@@ -70,6 +70,20 @@
             <button type="button" id="btn-pick-compare" class="btn btn-small btn-ghost" style="display:none;">选择对比会话</button>
             <button type="button" id="btn-select-mode" class="btn btn-small">选择内容进行总结</button>
             <button type="button" id="btn-session-manage" class="btn btn-small btn-ghost">会话管理</button>
+            <button
+              type="button"
+              id="btn-storage-settings"
+              class="btn btn-small btn-ghost btn-storage-settings"
+              aria-expanded="false"
+              aria-controls="storage-settings-popover"
+              aria-label="存储与设置"
+              title="存储与设置"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+            </button>
           </div>
         </div>
 
@@ -158,6 +172,18 @@
     <div id="session-menu-popover" class="session-menu-popover" hidden role="menu" aria-hidden="true">
       <button type="button" class="session-menu-item session-menu-rename" data-id="">重命名</button>
       <button type="button" class="session-menu-item session-menu-delete" data-id="">删除</button>
+    </div>
+
+    <div
+      id="storage-settings-popover"
+      class="storage-settings-popover"
+      hidden
+      role="region"
+      aria-label="存储占用"
+      aria-hidden="true"
+    >
+      <p id="storage-settings-popover-main" class="storage-settings-popover-main"></p>
+      <p class="storage-settings-popover-note">仅统计会话与元数据，不含发送目标等其它设置</p>
     </div>
 
     <div id="compare-picker-popover" class="compare-picker-popover" hidden aria-hidden="true">

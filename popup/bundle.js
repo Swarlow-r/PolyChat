@@ -2384,6 +2384,9 @@ Please report this to https://github.com/markedjs/marked.`, e) {
   var btnPickCompare = document.getElementById("btn-pick-compare");
   var btnSelectMode = document.getElementById("btn-select-mode");
   var btnSessionManage = document.getElementById("btn-session-manage");
+  var btnStorageSettings = document.getElementById("btn-storage-settings");
+  var storageSettingsPopoverEl = document.getElementById("storage-settings-popover");
+  var storageSettingsPopoverMainEl = document.getElementById("storage-settings-popover-main");
   var btnCancelSelect = document.getElementById("btn-cancel-select");
   var btnDoSummary = document.getElementById("btn-do-summary");
   var sessionManageToolbarEl = document.getElementById("session-manage-toolbar");
@@ -2410,6 +2413,7 @@ Please report this to https://github.com/markedjs/marked.`, e) {
   var bulkSelectedConvIds = /* @__PURE__ */ new Set();
   var editingConvId = null;
   var sessionMenuOpenConvId = null;
+  var storageSettingsOpen = false;
   function syncSessionMenuPopoverPosition() {
     if (!sessionMenuPopoverEl) return;
     if (!sessionMenuOpenConvId) {
@@ -3820,6 +3824,77 @@ ${lines}`;
     } catch (_2) {
     }
   }
+  function formatStorageBytes(bytes) {
+    if (typeof bytes !== "number" || bytes < 0 || !Number.isFinite(bytes)) return "\u2014";
+    if (bytes < 1024) return `${bytes} B`;
+    const kb = bytes / 1024;
+    if (kb < 1024) {
+      const rounded = kb < 10 ? Math.round(kb * 10) / 10 : Math.round(kb);
+      return `${rounded} KB`;
+    }
+    const mb = kb / 1024;
+    const roundedMb = mb < 10 ? Math.round(mb * 10) / 10 : Math.round(mb);
+    return `${roundedMb} MB`;
+  }
+  function syncStorageSettingsPopoverPosition() {
+    if (!storageSettingsPopoverEl || !btnStorageSettings) return;
+    if (!storageSettingsOpen || storageSettingsPopoverEl.hasAttribute("hidden")) return;
+    requestAnimationFrame(() => {
+      if (!storageSettingsOpen) return;
+      const rect = btnStorageSettings.getBoundingClientRect();
+      const gap = 6;
+      const pad = 6;
+      const mw = storageSettingsPopoverEl.offsetWidth;
+      const mh = storageSettingsPopoverEl.offsetHeight;
+      let left = rect.right - mw;
+      let top = rect.bottom + gap;
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      if (left < pad) left = pad;
+      if (left + mw > vw - pad) left = Math.max(pad, vw - pad - mw);
+      if (top + mh > vh - pad) top = rect.top - gap - mh;
+      if (top < pad) top = pad;
+      storageSettingsPopoverEl.style.left = `${Math.round(left)}px`;
+      storageSettingsPopoverEl.style.top = `${Math.round(top)}px`;
+    });
+  }
+  function closeStorageSettingsPopover() {
+    storageSettingsOpen = false;
+    if (storageSettingsPopoverEl) {
+      storageSettingsPopoverEl.setAttribute("hidden", "");
+      storageSettingsPopoverEl.setAttribute("aria-hidden", "true");
+    }
+    if (btnStorageSettings) btnStorageSettings.setAttribute("aria-expanded", "false");
+  }
+  async function openStorageSettingsPopover() {
+    if (!storageSettingsPopoverMainEl || !storageSettingsPopoverEl || !btnStorageSettings) return;
+    storageSettingsOpen = true;
+    storageSettingsPopoverMainEl.textContent = "\u8BA1\u7B97\u4E2D\u2026";
+    storageSettingsPopoverEl.removeAttribute("hidden");
+    storageSettingsPopoverEl.setAttribute("aria-hidden", "false");
+    btnStorageSettings.setAttribute("aria-expanded", "true");
+    syncStorageSettingsPopoverPosition();
+    try {
+      const res = await sendMessage({ type: "GET_SESSION_STORAGE_BYTES" });
+      if (res && typeof res === "object" && typeof res.error === "string") {
+        storageSettingsPopoverMainEl.textContent = "\u65E0\u6CD5\u8BFB\u53D6\u5360\u7528";
+      } else if (typeof res === "number") {
+        storageSettingsPopoverMainEl.textContent = `\u5F53\u524D\u5360\u7528\u7A7A\u95F4\uFF1A${formatStorageBytes(res)}`;
+      } else {
+        storageSettingsPopoverMainEl.textContent = "\u65E0\u6CD5\u8BFB\u53D6\u5360\u7528";
+      }
+    } catch (_e) {
+      storageSettingsPopoverMainEl.textContent = "\u65E0\u6CD5\u8BFB\u53D6\u5360\u7528";
+    }
+    syncStorageSettingsPopoverPosition();
+  }
+  function toggleStorageSettingsPopover() {
+    if (storageSettingsOpen) {
+      closeStorageSettingsPopover();
+      return;
+    }
+    void openStorageSettingsPopover();
+  }
   sessionListEl.addEventListener("click", (e) => {
     const locateBtn = e.target.closest(".btn-locate-origin");
     if (locateBtn) {
@@ -3930,6 +4005,11 @@ ${lines}`;
   }
   window.addEventListener("keydown", (e) => {
     if (e.key !== "Escape") return;
+    if (storageSettingsPopoverEl && !storageSettingsPopoverEl.hasAttribute("hidden")) {
+      e.preventDefault();
+      closeStorageSettingsPopover();
+      return;
+    }
     if (comparePickerPopoverEl && !comparePickerPopoverEl.hasAttribute("hidden")) {
       e.preventDefault();
       closeComparePicker();
@@ -3966,6 +4046,24 @@ ${lines}`;
       openComparePicker();
     });
   }
+  if (btnStorageSettings) {
+    btnStorageSettings.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleStorageSettingsPopover();
+    });
+  }
+  document.addEventListener(
+    "pointerdown",
+    (e) => {
+      if (!storageSettingsOpen) return;
+      const t = e.target;
+      if (btnStorageSettings && (btnStorageSettings === t || btnStorageSettings.contains(t))) return;
+      if (storageSettingsPopoverEl && storageSettingsPopoverEl.contains(t)) return;
+      closeStorageSettingsPopover();
+    },
+    true
+  );
   if (btnSessionManage) btnSessionManage.addEventListener("click", enterSessionManageMode);
   if (btnSessionManageCancel) btnSessionManageCancel.addEventListener("click", exitSessionManageMode);
   if (btnSessionManageDelete) btnSessionManageDelete.addEventListener("click", () => void bulkDeleteSelectedSessions());
@@ -4013,6 +4111,7 @@ ${lines}`;
   );
   window.addEventListener("resize", () => {
     if (sessionMenuOpenConvId) syncSessionMenuPopoverPosition();
+    if (storageSettingsOpen) syncStorageSettingsPopoverPosition();
   });
   document.addEventListener("click", (e) => {
     if (sessionMenuOpenConvId && !e.target.closest("#session-menu-popover") && !e.target.closest(".session-more-btn")) {
